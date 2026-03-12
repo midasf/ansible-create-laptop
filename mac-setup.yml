@@ -1,0 +1,186 @@
+---
+- name: Mac Setup
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    homebrew_packages:
+      - git
+      - awscli
+      - tfenv
+      - kubectl
+      - helm
+      - k9s
+      - kubectx
+      - aws-vault
+      - jq
+      - yq
+      - gh
+
+    homebrew_cask_packages:
+      - visual-studio-code
+      - iterm2
+      - firefox
+      - lens
+      - claude
+      - signal
+      - spotify
+
+    mas_apps:
+      - { id: 937984704,  name: "Amphetamine" }
+
+  tasks:
+
+    # ── Homebrew ────────────────────────────────────────────────────────────────
+
+    - name: Check if Homebrew is installed
+      stat:
+        path: /opt/homebrew/bin/brew
+      register: homebrew_check
+
+    - name: Install Homebrew
+      shell: |
+        /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+      when: not homebrew_check.stat.exists
+
+    - name: Update Homebrew
+      homebrew:
+        update_homebrew: true
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
+    # ── CLI packages ─────────────────────────────────────────────────────────────
+
+    - name: Install Homebrew packages
+      homebrew:
+        name: "{{ item }}"
+        state: present
+      loop: "{{ homebrew_packages }}"
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
+    # ── GUI / Cask apps ──────────────────────────────────────────────────────────
+
+    - name: Install Homebrew Cask apps
+      homebrew_cask:
+        name: "{{ item }}"
+        state: present
+        install_options: "adopt"
+      loop: "{{ homebrew_cask_packages }}"
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
+    - name: Check if Docker Desktop is already installed via brew
+      command: brew list --cask docker
+      register: docker_brew_check
+      failed_when: false
+      changed_when: false
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
+    - name: Create /usr/local/cli-plugins for Docker
+      file:
+        path: /usr/local/cli-plugins
+        state: directory
+        mode: '0755'
+      become: true
+      when: docker_brew_check.rc != 0
+
+    - name: Install Docker Desktop (only if not already present)
+      homebrew_cask:
+        name: docker
+        state: present
+      when: docker_brew_check.rc != 0
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
+    # ── Mac App Store ────────────────────────────────────────────────────────────
+
+    - name: Install mas (Mac App Store CLI)
+      homebrew:
+        name: mas
+        state: present
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
+    - name: Install Mac App Store apps
+      command: mas install {{ item.id }}
+      loop: "{{ mas_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: mas_result
+      changed_when: "'already installed' not in mas_result.stdout"
+
+    # ── macOS system settings ────────────────────────────────────────────────────
+
+    - name: Enable fast key repeat
+      osx_defaults:
+        domain: NSGlobalDomain
+        key: KeyRepeat
+        type: int
+        value: 2
+
+    - name: Set short initial key repeat delay
+      osx_defaults:
+        domain: NSGlobalDomain
+        key: InitialKeyRepeat
+        type: int
+        value: 15
+
+    - name: Show hidden files in Finder
+      osx_defaults:
+        domain: com.apple.finder
+        key: AppleShowAllFiles
+        type: bool
+        value: true
+
+    - name: Show all filename extensions
+      osx_defaults:
+        domain: NSGlobalDomain
+        key: AppleShowAllExtensions
+        type: bool
+        value: true
+
+    - name: Show path bar in Finder
+      osx_defaults:
+        domain: com.apple.finder
+        key: ShowPathbar
+        type: bool
+        value: true
+
+    - name: Disable .DS_Store on network volumes
+      osx_defaults:
+        domain: com.apple.desktopservices
+        key: DSDontWriteNetworkStores
+        type: bool
+        value: true
+
+    - name: Set screenshots folder to ~/Screenshots
+      block:
+        - name: Create Screenshots directory
+          file:
+            path: '{{ ansible_facts["env"]["HOME"] }}/Screenshots'
+            state: directory
+            mode: '0755'
+        - name: Set screenshot save location
+          osx_defaults:
+            domain: com.apple.screencapture
+            key: location
+            type: string
+            value: '{{ ansible_facts["env"]["HOME"] }}/Screenshots'
+
+    - name: Autohide the Dock
+      osx_defaults:
+        domain: com.apple.dock
+        key: autohide
+        type: bool
+        value: true
+
+    - name: Restart Dock to apply changes
+      command: killall Dock
+      changed_when: false
+
+    - name: Restart Finder to apply changes
+      command: killall Finder
+      changed_when: false
