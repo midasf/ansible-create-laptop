@@ -18,6 +18,7 @@
       - yq
       - gh
       - pre-commit
+      - anomalyco/tap/opencode
 
     precommit_global_config_path: '{{ ansible_facts["env"]["HOME"] }}/.pre-commit-config.yaml'
 
@@ -42,9 +43,10 @@
       - hashicorp.terraform
       - ms-kubernetes-tools.vscode-kubernetes-tools
       - redhat.vscode-yaml
+      - yzhang.markdown-all-in-one
+      - vivaxy.vscode-conventional-commits
 
   tasks:
-
     # ── Homebrew ────────────────────────────────────────────────────────────────
 
     - name: Check if Homebrew is installed
@@ -132,7 +134,7 @@
         dest: /usr/local/bin/code
         state: link
       become: true
-      
+
     # ── VSCode extensions ────────────────────────────────────────────────────────
 
     - name: Install VSCode extensions
