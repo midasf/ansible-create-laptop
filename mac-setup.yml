@@ -44,9 +44,9 @@
       - ms-kubernetes-tools.vscode-kubernetes-tools
       - redhat.vscode-yaml
       - yzhang.markdown-all-in-one
+      - vivaxy.vscode-conventional-commits
 
   tasks:
-
     # ── Homebrew ────────────────────────────────────────────────────────────────
 
     - name: Check if Homebrew is installed
