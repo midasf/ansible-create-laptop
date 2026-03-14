@@ -6,6 +6,7 @@
 
   vars:
     homebrew_packages:
+      - zsh
       - git
       - awscli
       - tfenv
