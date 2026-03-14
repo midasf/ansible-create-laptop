@@ -1,0 +1,28 @@
+name: KICS Scan
+
+on:
+  push:
+    branches: [main, master, develop]
+  pull_request:
+    branches: [main, master, develop]
+
+jobs:
+  kics-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Run KICS scan for infrastructure code security issues
+        uses: Checkmarx/kics-github-action@master
+        with:
+          path: '.'
+          output_formats: 'cli,sarif'
+          output_path: 'kics-results'
+          exclude_paths: '.git'
+
+      - name: Upload SARIF report to GitHub Security
+        uses: github/codeql-action/upload-sarif@v2
+        if: always()
+        with:
+          sarif_file: 'kics-results/results.sarif'
