@@ -22,41 +22,24 @@
       - ansible
       - nmap
       - ripgrep
-
-    precommit_global_config_path: '{{ ansible_facts["env"]["HOME"] }}/.pre-commit-config.yaml'
+      - eksctl
+      - awslogs
+      - sops
+      - fzf
 
     homebrew_cask_packages:
       - visual-studio-code
       - iterm2
       - firefox
       - lens
-      - claude
-      - signal
-      - spotify
-      - docker-desktop
-      - android-platform-tools
-      - spatial
 
     mas_apps:
       - { id: 937984704,  name: "Amphetamine" }
 
-    vscode_extensions:
-      - Anthropic.claude-code
-      - ms-azuretools.vscode-containers
-      - ms-vscode-remote.remote-containers
-      - ms-azuretools.vscode-docker
-      - github.vscode-github-actions
-      - hashicorp.terraform
-      - ms-kubernetes-tools.vscode-kubernetes-tools
-      - redhat.vscode-yaml
-      - yzhang.markdown-all-in-one
-      - vivaxy.vscode-conventional-commits
-      - ms-vscode-remote.remote-ssh
-      - ms-vscode-remote.remote-ssh-edit
-      - ms-vscode.remote-explorer
-      - qwtel.sqlite-viewer
+    computer_name: "midas-macbook"
 
   tasks:
+
     # ── Homebrew ────────────────────────────────────────────────────────────────
 
     - name: Check if Homebrew is installed
@@ -129,6 +112,17 @@
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
+    - name: Check if signed into the App Store
+      command: mas account
+      register: mas_account_check
+      failed_when: false
+      changed_when: false
+
+    - name: Warn if not signed into the App Store
+      debug:
+        msg: "WARNING: Not signed into the Mac App Store — skipping MAS installs. Sign in via the App Store app and re-run the playbook."
+      when: mas_account_check.rc != 0
+
     - name: Install Mac App Store apps
       command: mas install {{ item.id }}
       loop: "{{ mas_apps }}"
@@ -136,82 +130,25 @@
         label: "{{ item.name }}"
       register: mas_result
       changed_when: "'already installed' not in mas_result.stdout"
-
-
-    - name: Ensure 'code' CLI is on PATH
-      file:
-        src: '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code'
-        dest: /usr/local/bin/code
-        state: link
-      become: true
-
-    # ── VSCode extensions ────────────────────────────────────────────────────────
-
-    - name: Install VSCode extensions
-      command: code --install-extension {{ item }} --force
-      loop: "{{ vscode_extensions }}"
-      environment:
-        PATH: '/opt/homebrew/bin:/usr/local/bin:{{ ansible_facts["env"]["PATH"] }}'
-      register: vscode_ext_result
-      changed_when: "'already installed' not in vscode_ext_result.stdout"
-
-    # ── Pre-commit (global) ──────────────────────────────────────────────────────
-
-    - name: Write global pre-commit config
-      copy:
-        dest: '{{ precommit_global_config_path }}'
-        content: |
-          repos:
-            - repo: https://github.com/pre-commit/pre-commit-hooks
-              rev: v4.6.0
-              hooks:
-                - id: trailing-whitespace
-                - id: end-of-file-fixer
-                - id: detect-aws-credentials
-                  args: ['--allow-missing-credentials']
-                - id: detect-private-key
-
-            - repo: https://github.com/antonbabenko/pre-commit-terraform
-              rev: v1.92.0
-              hooks:
-                - id: terraform_fmt
-                - id: terraform_validate
-
-            - repo: https://github.com/compilerla/conventional-pre-commit
-              rev: v3.4.0
-              hooks:
-                - id: conventional-pre-commit
-                  stages: [commit-msg]
-
-    - name: Set pre-commit global config path in git
-      community.general.git_config:
-        name: core.hooksPath
-        scope: global
-        value: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks'
-
-    - name: Create global git hooks directory
-      file:
-        path: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks'
-        state: directory
-        mode: '0755'
-
-    - name: Install pre-commit hook script globally
-      copy:
-        dest: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks/pre-commit'
-        mode: '0755'
-        content: |
-          #!/usr/bin/env bash
-          pre-commit run --config {{ precommit_global_config_path }} --hook-stage pre-commit
-
-    - name: Install commit-msg hook script globally
-      copy:
-        dest: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks/commit-msg'
-        mode: '0755'
-        content: |
-          #!/usr/bin/env bash
-          pre-commit run --config {{ precommit_global_config_path }} --hook-stage commit-msg --commit-msg-filename "$1"
+      failed_when: false
+      when: mas_account_check.rc == 0
 
     # ── macOS system settings ────────────────────────────────────────────────────
+
+    - name: Set computer name
+      hostname:
+        name: "{{ computer_name }}"
+      become: true
+
+    - name: Set HostName
+      command: scutil --set HostName "{{ computer_name }}"
+      become: true
+      changed_when: false
+
+    - name: Set LocalHostName
+      command: scutil --set LocalHostName "{{ computer_name }}"
+      become: true
+      changed_when: false
 
     - name: Enable fast key repeat
       osx_defaults:
@@ -226,6 +163,34 @@
         key: InitialKeyRepeat
         type: int
         value: 15
+
+    - name: Disable autocorrect
+      osx_defaults:
+        domain: NSGlobalDomain
+        key: NSAutomaticSpellingCorrectionEnabled
+        type: bool
+        value: false
+
+    - name: Disable autocapitalize
+      osx_defaults:
+        domain: NSGlobalDomain
+        key: NSAutomaticCapitalizationEnabled
+        type: bool
+        value: false
+
+    - name: Disable smart quotes
+      osx_defaults:
+        domain: NSGlobalDomain
+        key: NSAutomaticQuoteSubstitutionEnabled
+        type: bool
+        value: false
+
+    - name: Disable smart dashes
+      osx_defaults:
+        domain: NSGlobalDomain
+        key: NSAutomaticDashSubstitutionEnabled
+        type: bool
+        value: false
 
     - name: Show hidden files in Finder
       osx_defaults:
@@ -254,6 +219,11 @@
         key: DSDontWriteNetworkStores
         type: bool
         value: true
+
+    - name: Show battery percentage in menu bar (Apple Silicon)
+      command: >
+        defaults write com.apple.controlcenter "NSStatusItem Visible BatteryPercent" -bool true
+      changed_when: false
 
     - name: Set screenshots folder to ~/Screenshots
       block:
