@@ -34,7 +34,7 @@
       - lens
 
     mas_apps:
-      - { id: 937984704,  name: "Amphetamine" }
+      - { id: 937984704, name: "Amphetamine" }
 
     computer_name: "midas-macbook"
 
@@ -43,17 +43,18 @@
     # ── Homebrew ────────────────────────────────────────────────────────────────
 
     - name: Check if Homebrew is installed
-      stat:
+      ansible.builtin.stat:
         path: /opt/homebrew/bin/brew
       register: homebrew_check
 
     - name: Install Homebrew
-      shell: |
+      ansible.builtin.shell: |
         /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
       when: not homebrew_check.stat.exists
+      changed_when: true
 
     - name: Update Homebrew
-      homebrew:
+      community.general.homebrew:
         update_homebrew: true
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
@@ -61,7 +62,7 @@
     # ── CLI packages ─────────────────────────────────────────────────────────────
 
     - name: Install Homebrew packages
-      homebrew:
+      community.general.homebrew:
         name: "{{ item }}"
         state: present
       loop: "{{ homebrew_packages }}"
@@ -71,7 +72,7 @@
     # ── GUI / Cask apps ──────────────────────────────────────────────────────────
 
     - name: Install Homebrew Cask apps
-      homebrew_cask:
+      community.general.homebrew_cask:
         name: "{{ item }}"
         state: present
         install_options: "adopt"
@@ -80,7 +81,7 @@
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
     - name: Check if Docker Desktop is already installed via brew
-      command: brew list --cask docker
+      ansible.builtin.command: brew list --cask docker
       register: docker_brew_check
       failed_when: false
       changed_when: false
@@ -88,7 +89,7 @@
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
     - name: Create /usr/local/cli-plugins for Docker
-      file:
+      ansible.builtin.file:
         path: /usr/local/cli-plugins
         state: directory
         mode: '0755'
@@ -96,7 +97,7 @@
       when: docker_brew_check.rc != 0
 
     - name: Install Docker Desktop (only if not already present)
-      homebrew_cask:
+      community.general.homebrew_cask:
         name: docker
         state: present
       when: docker_brew_check.rc != 0
@@ -106,25 +107,25 @@
     # ── Mac App Store ────────────────────────────────────────────────────────────
 
     - name: Install mas (Mac App Store CLI)
-      homebrew:
+      community.general.homebrew:
         name: mas
         state: present
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
     - name: Check if signed into the App Store
-      command: mas account
+      ansible.builtin.command: mas account
       register: mas_account_check
       failed_when: false
       changed_when: false
 
     - name: Warn if not signed into the App Store
-      debug:
+      ansible.builtin.debug:
         msg: "WARNING: Not signed into the Mac App Store — skipping MAS installs. Sign in via the App Store app and re-run the playbook."
       when: mas_account_check.rc != 0
 
     - name: Install Mac App Store apps
-      command: mas install {{ item.id }}
+      ansible.builtin.command: mas install {{ item.id }}
       loop: "{{ mas_apps }}"
       loop_control:
         label: "{{ item.name }}"
@@ -136,120 +137,120 @@
     # ── macOS system settings ────────────────────────────────────────────────────
 
     - name: Set computer name
-      hostname:
+      ansible.builtin.hostname:
         name: "{{ computer_name }}"
       become: true
 
     - name: Set HostName
-      command: scutil --set HostName "{{ computer_name }}"
+      ansible.builtin.command: scutil --set HostName "{{ computer_name }}"
       become: true
       changed_when: false
 
     - name: Set LocalHostName
-      command: scutil --set LocalHostName "{{ computer_name }}"
+      ansible.builtin.command: scutil --set LocalHostName "{{ computer_name }}"
       become: true
       changed_when: false
 
     - name: Enable fast key repeat
-      osx_defaults:
+      community.general.osx_defaults:
         domain: NSGlobalDomain
         key: KeyRepeat
         type: int
         value: 2
 
     - name: Set short initial key repeat delay
-      osx_defaults:
+      community.general.osx_defaults:
         domain: NSGlobalDomain
         key: InitialKeyRepeat
         type: int
         value: 15
 
     - name: Disable autocorrect
-      osx_defaults:
+      community.general.osx_defaults:
         domain: NSGlobalDomain
         key: NSAutomaticSpellingCorrectionEnabled
         type: bool
         value: false
 
     - name: Disable autocapitalize
-      osx_defaults:
+      community.general.osx_defaults:
         domain: NSGlobalDomain
         key: NSAutomaticCapitalizationEnabled
         type: bool
         value: false
 
     - name: Disable smart quotes
-      osx_defaults:
+      community.general.osx_defaults:
         domain: NSGlobalDomain
         key: NSAutomaticQuoteSubstitutionEnabled
         type: bool
         value: false
 
     - name: Disable smart dashes
-      osx_defaults:
+      community.general.osx_defaults:
         domain: NSGlobalDomain
         key: NSAutomaticDashSubstitutionEnabled
         type: bool
         value: false
 
     - name: Show hidden files in Finder
-      osx_defaults:
+      community.general.osx_defaults:
         domain: com.apple.finder
         key: AppleShowAllFiles
         type: bool
         value: true
 
     - name: Show all filename extensions
-      osx_defaults:
+      community.general.osx_defaults:
         domain: NSGlobalDomain
         key: AppleShowAllExtensions
         type: bool
         value: true
 
     - name: Show path bar in Finder
-      osx_defaults:
+      community.general.osx_defaults:
         domain: com.apple.finder
         key: ShowPathbar
         type: bool
         value: true
 
     - name: Disable .DS_Store on network volumes
-      osx_defaults:
+      community.general.osx_defaults:
         domain: com.apple.desktopservices
         key: DSDontWriteNetworkStores
         type: bool
         value: true
 
     - name: Show battery percentage in menu bar (Apple Silicon)
-      command: >
+      ansible.builtin.command: >
         defaults write com.apple.controlcenter "NSStatusItem Visible BatteryPercent" -bool true
       changed_when: false
 
     - name: Set screenshots folder to ~/Screenshots
       block:
         - name: Create Screenshots directory
-          file:
+          ansible.builtin.file:
             path: '{{ ansible_facts["env"]["HOME"] }}/Screenshots'
             state: directory
             mode: '0755'
         - name: Set screenshot save location
-          osx_defaults:
+          community.general.osx_defaults:
             domain: com.apple.screencapture
             key: location
             type: string
             value: '{{ ansible_facts["env"]["HOME"] }}/Screenshots'
 
     - name: Autohide the Dock
-      osx_defaults:
+      community.general.osx_defaults:
         domain: com.apple.dock
         key: autohide
         type: bool
         value: true
 
     - name: Restart Dock to apply changes
-      command: killall Dock
+      ansible.builtin.command: killall Dock
       changed_when: false
 
     - name: Restart Finder to apply changes
-      command: killall Finder
+      ansible.builtin.command: killall Finder
       changed_when: false
