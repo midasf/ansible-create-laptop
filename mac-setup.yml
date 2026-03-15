@@ -33,6 +33,8 @@
       - iterm2
       - firefox
       - lens
+      - obsidian
+
 
     mas_apps:
       - { id: 937984704, name: "Amphetamine" }
