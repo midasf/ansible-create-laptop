@@ -27,6 +27,7 @@
       - awslogs
       - sops
       - fzf
+      - rectangle
 
     homebrew_cask_packages:
       - visual-studio-code
