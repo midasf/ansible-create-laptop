@@ -163,7 +163,7 @@
     # ── Pre-commit (global) ──────────────────────────────────────────────────────
 
     - name: Write global pre-commit config
-      copy:
+      ansible.builtin.copy:
         dest: '{{ precommit_global_config_path }}'
         content: |
           repos:
@@ -195,13 +195,13 @@
         value: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks'
 
     - name: Create global git hooks directory
-      file:
+      ansible.builtin.file:
         path: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks'
         state: directory
         mode: '0755'
 
     - name: Install pre-commit hook script globally
-      copy:
+      ansible.builtin.copy:
         dest: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks/pre-commit'
         mode: '0755'
         content: |
@@ -209,7 +209,7 @@
           pre-commit run --config {{ precommit_global_config_path }} --hook-stage pre-commit
 
     - name: Install commit-msg hook script globally
-      copy:
+      ansible.builtin.copy:
         dest: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks/commit-msg'
         mode: '0755'
         content: |
