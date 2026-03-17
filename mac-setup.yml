@@ -168,7 +168,7 @@
         content: |
           repos:
             - repo: https://github.com/pre-commit/pre-commit-hooks
-              rev: v4.6.0
+              rev: v6.0.0
               hooks:
                 - id: trailing-whitespace
                 - id: end-of-file-fixer
@@ -177,13 +177,13 @@
                 - id: detect-private-key
 
             - repo: https://github.com/antonbabenko/pre-commit-terraform
-              rev: v1.92.0
+              rev: v1.105.0
               hooks:
                 - id: terraform_fmt
                 - id: terraform_validate
 
             - repo: https://github.com/compilerla/conventional-pre-commit
-              rev: v3.4.0
+              rev: v4.4.0
               hooks:
                 - id: conventional-pre-commit
                   stages: [commit-msg]
