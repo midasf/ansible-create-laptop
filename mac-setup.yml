@@ -153,7 +153,7 @@
     # ── VSCode extensions ────────────────────────────────────────────────────────
 
     - name: Install VSCode extensions
-      command: code --install-extension {{ item }} --force
+      ansible.builtin.command: code --install-extension {{ item }} --force
       loop: "{{ vscode_extensions }}"
       environment:
         PATH: '/opt/homebrew/bin:/usr/local/bin:{{ ansible_facts["env"]["PATH"] }}'
