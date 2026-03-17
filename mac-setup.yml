@@ -36,11 +36,23 @@
       - lens
       - obsidian
 
+    vscode_extensions:
+      - Anthropic.claude-code
+      - ms-azuretools.vscode-containers
+      - ms-vscode-remote.remote-containers
+      - ms-azuretools.vscode-docker
+      - github.vscode-github-actions
+      - hashicorp.terraform
+      - ms-kubernetes-tools.vscode-kubernetes-tools
+      - redhat.vscode-yaml
+      - checkmarx.ast-results
 
     mas_apps:
       - { id: 937984704, name: "Amphetamine" }
 
     computer_name: "midas-macbook"
+
+    precommit_global_config_path: '{{ ansible_facts["env"]["HOME"] }}/.pre-commit-config.yaml'
 
   tasks:
 
@@ -137,6 +149,73 @@
       changed_when: "'already installed' not in mas_result.stdout"
       failed_when: false
       when: mas_account_check.rc == 0
+
+    # ── VSCode extensions ────────────────────────────────────────────────────────
+
+    - name: Install VSCode extensions
+      command: code --install-extension {{ item }} --force
+      loop: "{{ vscode_extensions }}"
+      environment:
+        PATH: '/opt/homebrew/bin:/usr/local/bin:{{ ansible_facts["env"]["PATH"] }}'
+      register: vscode_ext_result
+      changed_when: "'already installed' not in vscode_ext_result.stdout"
+
+    # ── Pre-commit (global) ──────────────────────────────────────────────────────
+
+    - name: Write global pre-commit config
+      copy:
+        dest: '{{ precommit_global_config_path }}'
+        content: |
+          repos:
+            - repo: https://github.com/pre-commit/pre-commit-hooks
+              rev: v4.6.0
+              hooks:
+                - id: trailing-whitespace
+                - id: end-of-file-fixer
+                - id: detect-aws-credentials
+                  args: ['--allow-missing-credentials']
+                - id: detect-private-key
+
+            - repo: https://github.com/antonbabenko/pre-commit-terraform
+              rev: v1.92.0
+              hooks:
+                - id: terraform_fmt
+                - id: terraform_validate
+
+            - repo: https://github.com/compilerla/conventional-pre-commit
+              rev: v3.4.0
+              hooks:
+                - id: conventional-pre-commit
+                  stages: [commit-msg]
+
+    - name: Set pre-commit global config path in git
+      community.general.git_config:
+        name: core.hooksPath
+        scope: global
+        value: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks'
+
+    - name: Create global git hooks directory
+      file:
+        path: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks'
+        state: directory
+        mode: '0755'
+
+    - name: Install pre-commit hook script globally
+      copy:
+        dest: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks/pre-commit'
+        mode: '0755'
+        content: |
+          #!/usr/bin/env bash
+          pre-commit run --config {{ precommit_global_config_path }} --hook-stage pre-commit
+
+    - name: Install commit-msg hook script globally
+      copy:
+        dest: '{{ ansible_facts["env"]["HOME"] }}/.git-hooks/commit-msg'
+        mode: '0755'
+        content: |
+          #!/usr/bin/env bash
+          pre-commit run --config {{ precommit_global_config_path }} --hook-stage commit-msg --commit-msg-filename "$1"
+
 
     # ── macOS system settings ────────────────────────────────────────────────────
 
