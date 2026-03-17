@@ -165,6 +165,7 @@
     - name: Write global pre-commit config
       ansible.builtin.copy:
         dest: '{{ precommit_global_config_path }}'
+        mode: preserve
         content: |
           repos:
             - repo: https://github.com/pre-commit/pre-commit-hooks
