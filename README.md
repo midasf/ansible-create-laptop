@@ -22,7 +22,7 @@ This project uses Ansible to automate the installation of essential development 
 
 ### 1. Clone the repository
 ```bash
-git clone <repository-url>
+git clone https://github.com/midasf/ansible-create-laptop.git
 cd ansible-create-laptop
 ```
 
