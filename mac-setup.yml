@@ -35,6 +35,7 @@
       - firefox
       - lens
       - obsidian
+      - claude-code
 
     vscode_extensions:
       - Anthropic.claude-code
@@ -85,12 +86,29 @@
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
+    - name: Upgrade Homebrew packages
+      community.general.homebrew:
+        name: "{{ item }}"
+        state: latest
+      loop: "{{ homebrew_packages }}"
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
     # ── GUI / Cask apps ──────────────────────────────────────────────────────────
 
     - name: Install Homebrew Cask apps
       community.general.homebrew_cask:
         name: "{{ item }}"
         state: present
+        install_options: "adopt"
+      loop: "{{ homebrew_cask_packages }}"
+      environment:
+        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+
+    - name: Upgrade Homebrew Cask apps
+      community.general.homebrew_cask:
+        name: "{{ item }}"
+        state: upgraded
         install_options: "adopt"
       loop: "{{ homebrew_cask_packages }}"
       environment:
@@ -147,6 +165,16 @@
         label: "{{ item.name }}"
       register: mas_result
       changed_when: "'already installed' not in mas_result.stdout"
+      failed_when: false
+      when: mas_account_check.rc == 0
+
+    - name: Upgrade Mac App Store apps
+      ansible.builtin.command: mas upgrade {{ item.id }}
+      loop: "{{ mas_apps }}"
+      loop_control:
+        label: "{{ item.name }}"
+      register: mas_upgrade_result
+      changed_when: "'already installed' not in mas_upgrade_result.stdout"
       failed_when: false
       when: mas_account_check.rc == 0
 
