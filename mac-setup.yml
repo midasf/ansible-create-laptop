@@ -28,6 +28,7 @@
       - sops
       - fzf
       - rectangle
+      - yt-dlp
 
     homebrew_cask_packages:
       - visual-studio-code
@@ -36,6 +37,7 @@
       - lens
       - obsidian
       - claude-code
+      - audacity
 
     vscode_extensions:
       - Anthropic.claude-code
@@ -109,8 +111,7 @@
       community.general.homebrew_cask:
         name: "{{ item }}"
         state: upgraded
-        install_options: "adopt"
-      loop: "{{ homebrew_cask_packages }}"
+``      loop: "{{ homebrew_cask_packages }}"
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
