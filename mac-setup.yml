@@ -111,7 +111,7 @@
       community.general.homebrew_cask:
         name: "{{ item }}"
         state: upgraded
-``      loop: "{{ homebrew_cask_packages }}"
+      loop: "{{ homebrew_cask_packages }}"
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
