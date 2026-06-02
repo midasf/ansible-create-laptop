@@ -6,7 +6,13 @@
 
   vars:
     homebrew_packages:
+      - alfred
       - zsh
+      - zsh-completions
+      - zsh-syntax-highlighting
+      - zsh-autosuggestions
+      - thefuck
+      - spotify
       - git
       - awscli
       - tfenv
@@ -19,7 +25,6 @@
       - yq
       - gh
       - pre-commit
-      - anomalyco/tap/opencode
       - ansible
       - nmap
       - ripgrep
@@ -29,6 +34,10 @@
       - fzf
       - rectangle
       - yt-dlp
+      - docker
+      - cursor
+      - dash
+
 
     homebrew_cask_packages:
       - visual-studio-code
@@ -112,30 +121,6 @@
         name: "{{ item }}"
         state: upgraded
       loop: "{{ homebrew_cask_packages }}"
-      environment:
-        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
-
-    - name: Check if Docker Desktop is already installed via brew
-      ansible.builtin.command: brew list --cask docker
-      register: docker_brew_check
-      failed_when: false
-      changed_when: false
-      environment:
-        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
-
-    - name: Create /usr/local/cli-plugins for Docker
-      ansible.builtin.file:
-        path: /usr/local/cli-plugins
-        state: directory
-        mode: '0755'
-      become: true
-      when: docker_brew_check.rc != 0
-
-    - name: Install Docker Desktop (only if not already present)
-      community.general.homebrew_cask:
-        name: docker
-        state: present
-      when: docker_brew_check.rc != 0
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
