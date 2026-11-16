@@ -34,9 +34,74 @@
       - fzf
       - rectangle
       - yt-dlp
-      - docker
+      - podman
       - cursor
       - dash
+      - abseil
+      - ada-url
+      - azure-cli
+      - bash
+      - brotli
+      - c-ares
+      - ca-certificates
+      - certifi
+      - cffi
+      - cryptography
+      - dash-shell
+      - deno
+      - docker
+      - fmt
+      - gettext
+      - gitleaks
+      - grep
+      - hdrhistogram_c
+      - highway
+      - icu4c@78
+      - icu4c@79
+      - jpeg-turbo
+      - json-c
+      - kubernetes-cli
+      - libffi
+      - liblinear
+      - libnghttp2
+      - libnghttp3
+      - libngtcp2
+      - libsodium
+      - libssh
+      - libssh2
+      - libtiff
+      - libunistring
+      - libuv
+      - libyaml
+      - little-cms2
+      - llhttp
+      - lua
+      - lz4
+      - mas
+      - mermaid-cli
+      - merve
+      - mpdecimal
+      - nbytes
+      - ncurses
+      - node
+      - npq
+      - oniguruma
+      - opencode
+      - openssl@3
+      - openssl@4
+      - pcre2
+      - pycparser
+      - python@3.14
+      - readline
+      - simdjson
+      - simdutf
+      - sqlite
+      - terraform-docs
+      - tree
+      - trufflehog
+      - uvwasi
+      - xz
+      - zstd
 
 
     homebrew_cask_packages:
@@ -47,6 +112,13 @@
       - obsidian
       - claude-code
       - audacity
+      - alfred
+      - copilot-cli
+      - cursor
+      - rectangle
+      - spotify
+      - tflint
+      - tint
 
     vscode_extensions:
       - Anthropic.claude-code
@@ -58,11 +130,17 @@
       - ms-kubernetes-tools.vscode-kubernetes-tools
       - redhat.vscode-yaml
       - checkmarx.ast-results
+      - anthropic.claude-code
+      - checkmarx.cx-dev-assist
+      - elagil.pre-commit-helper
+      - mermaidchart.vscode-mermaid-chart
+      - ms-vscode.makefile-tools
+      - vivaxy.vscode-conventional-commits
 
     mas_apps:
       - { id: 937984704, name: "Amphetamine" }
 
-    computer_name: "midas-macbook"
+
 
     precommit_global_config_path: '{{ ansible_facts["env"]["HOME"] }}/.pre-commit-config.yaml'
 
@@ -97,13 +175,13 @@
       environment:
         PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
-    - name: Upgrade Homebrew packages
-      community.general.homebrew:
-        name: "{{ item }}"
-        state: latest
-      loop: "{{ homebrew_packages }}"
-      environment:
-        PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
+    # - name: Upgrade Homebrew packages
+    #   community.general.homebrew:
+    #     name: "{{ item }}"
+    #     state: latest
+    #   loop: "{{ homebrew_packages }}"
+    #   environment:
+    #     PATH: '/opt/homebrew/bin:{{ ansible_facts["env"]["PATH"] }}'
 
     # ── GUI / Cask apps ──────────────────────────────────────────────────────────
 
