@@ -119,6 +119,7 @@
       - spotify
       - tflint
       - tint
+      - tailscale-app
 
     vscode_extensions:
       - Anthropic.claude-code
